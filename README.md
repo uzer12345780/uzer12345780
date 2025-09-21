@@ -1,5 +1,7 @@
 ## Hi there 👋
 
+**Е** - Welcome to my profile!
+
 <!--
 **uzer12345780/uzer12345780** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 
