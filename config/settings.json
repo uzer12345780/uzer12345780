@@ -1,0 +1,51 @@
+{
+  "app_name": "KoloCloud",
+  "version": "1.0.0",
+  "description": "Хмарне сховище для військових цілей",
+  "features": {
+    "file_storage": true,
+    "ocr": true,
+    "ai_assistant": true,
+    "chat": true,
+    "encryption": true
+  },
+  "supported_file_types": [
+    "txt", "pdf", "doc", "docx", "xls", "xlsx",
+    "png", "jpg", "jpeg", "gif", "bmp", "tiff"
+  ],
+  "default_settings": {
+    "max_file_size_mb": 100,
+    "enable_registration": true,
+    "enable_encryption": true,
+    "ocr_default_language": "ukr+eng"
+  },
+  "chat_rooms": [
+    {
+      "id": "general",
+      "name": "Загальна",
+      "description": "Загальна кімната для всіх користувачів"
+    },
+    {
+      "id": "command",
+      "name": "Командування",
+      "description": "Кімната для командного складу"
+    },
+    {
+      "id": "support",
+      "name": "Підтримка",
+      "description": "Технічна підтримка та допомога"
+    }
+  ],
+  "user_roles": [
+    {
+      "id": "admin",
+      "name": "Адміністратор",
+      "permissions": ["all"]
+    },
+    {
+      "id": "user",
+      "name": "Користувач",
+      "permissions": ["read", "write", "upload", "chat"]
+    }
+  ]
+}

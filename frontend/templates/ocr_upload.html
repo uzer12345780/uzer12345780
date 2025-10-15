@@ -1,0 +1,169 @@
+{% extends "layout.html" %}
+
+{% block title %}OCR - KoloCloud{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-image"></i> Розпізнавання тексту (OCR)
+        </h1>
+        <p class="text-gray-600">Завантажте зображення для автоматичного розпізнавання тексту</p>
+    </div>
+    
+    <!-- Upload Section -->
+    <div class="bg-white p-8 rounded-lg shadow-lg mb-6">
+        <form id="ocrForm">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2 font-semibold">
+                    <i class="fas fa-image"></i> Виберіть зображення
+                </label>
+                <input type="file" id="imageInput" accept="image/*" required
+                       class="w-full px-4 py-2 border rounded-lg">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2 font-semibold">
+                    <i class="fas fa-language"></i> Мова розпізнавання
+                </label>
+                <select id="languageSelect" class="w-full px-4 py-2 border rounded-lg">
+                    <option value="ukr+eng">Українська + Англійська</option>
+                    <option value="ukr">Українська</option>
+                    <option value="eng">Англійська</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" id="saveFileCheckbox" checked class="mr-2">
+                    <span>Зберегти файл у системі</span>
+                </label>
+            </div>
+            
+            <button type="submit" 
+                    class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition">
+                <i class="fas fa-magic"></i> Розпізнати текст
+            </button>
+        </form>
+    </div>
+    
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="hidden bg-blue-50 p-4 rounded-lg mb-6 text-center">
+        <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-2"></i>
+        <p class="text-blue-700">Обробка зображення...</p>
+    </div>
+    
+    <!-- Preview Section -->
+    <div id="previewSection" class="hidden bg-white p-6 rounded-lg shadow-lg mb-6">
+        <h2 class="text-xl font-bold mb-4">
+            <i class="fas fa-eye"></i> Попередній перегляд
+        </h2>
+        <img id="imagePreview" class="max-w-full h-auto rounded border">
+    </div>
+    
+    <!-- Results Section -->
+    <div id="resultsSection" class="hidden bg-white p-6 rounded-lg shadow-lg">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold">
+                <i class="fas fa-file-text"></i> Розпізнаний текст
+            </h2>
+            <button onclick="copyText()" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                <i class="fas fa-copy"></i> Копіювати
+            </button>
+        </div>
+        
+        <textarea id="ocrText" rows="15" 
+                  class="w-full px-4 py-2 border rounded-lg font-mono text-sm"
+                  placeholder="Розпізнаний текст з'явиться тут..."></textarea>
+        
+        <div class="mt-4 flex space-x-2">
+            <button onclick="downloadText()" 
+                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                <i class="fas fa-download"></i> Завантажити як TXT
+            </button>
+            <button onclick="sendToAI()" 
+                    class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                <i class="fas fa-robot"></i> Відправити AI помічнику
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.getElementById('imageInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('imagePreview').src = e.target.result;
+                document.getElementById('previewSection').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    document.getElementById('ocrForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('imageInput');
+        const languageSelect = document.getElementById('languageSelect');
+        const saveFileCheckbox = document.getElementById('saveFileCheckbox');
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('language', languageSelect.value);
+        formData.append('save', saveFileCheckbox.checked);
+        
+        document.getElementById('loadingIndicator').classList.remove('hidden');
+        document.getElementById('resultsSection').classList.add('hidden');
+        
+        try {
+            const response = await fetch('/api/ocr/upload-and-process', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                document.getElementById('ocrText').value = data.text;
+                document.getElementById('resultsSection').classList.remove('hidden');
+                showNotification('Текст успішно розпізнано', 'success');
+            } else {
+                showNotification(data.error || 'Помилка OCR', 'error');
+            }
+        } catch (error) {
+            showNotification('Помилка з\'єднання', 'error');
+        } finally {
+            document.getElementById('loadingIndicator').classList.add('hidden');
+        }
+    });
+    
+    function copyText() {
+        const textarea = document.getElementById('ocrText');
+        textarea.select();
+        document.execCommand('copy');
+        showNotification('Текст скопійовано', 'success');
+    }
+    
+    function downloadText() {
+        const text = document.getElementById('ocrText').value;
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ocr_${Date.now()}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    
+    function sendToAI() {
+        const text = document.getElementById('ocrText').value;
+        localStorage.setItem('ocrTextForAI', text);
+        window.location.href = '/bot';
+    }
+</script>
+{% endblock %}

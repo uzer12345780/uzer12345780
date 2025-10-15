@@ -1,0 +1,224 @@
+{% extends "layout.html" %}
+
+{% block title %}AI Помічник - KoloCloud{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-robot"></i> AI Помічник
+        </h1>
+        <p class="text-gray-600">Інтелектуальний помічник для роботи з документами</p>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Chat Section -->
+        <div class="lg:col-span-2 bg-white rounded-lg shadow-lg flex flex-col" style="height: 600px;">
+            <div class="p-4 bg-blue-600 text-white rounded-t-lg">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-comments"></i> Чат з AI
+                </h2>
+            </div>
+            
+            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4">
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-robot text-6xl text-gray-300 mb-4"></i>
+                    <p>Привіт! Я ваш AI помічник. Чим можу допомогти?</p>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t">
+                <form id="chatForm" class="flex space-x-2">
+                    <input type="text" id="messageInput" placeholder="Введіть ваше питання..."
+                           class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button type="submit" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="space-y-6">
+            <!-- AI Status -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-bold mb-4">
+                    <i class="fas fa-info-circle"></i> Статус AI
+                </h3>
+                <div id="aiStatusInfo" class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i>
+                </div>
+            </div>
+            
+            <!-- Templates -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-bold mb-4">
+                    <i class="fas fa-file-alt"></i> Шаблони
+                </h3>
+                <div id="templatesList" class="space-y-2">
+                    <!-- Templates will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-bold mb-4">
+                    <i class="fas fa-bolt"></i> Швидкі дії
+                </h3>
+                <button onclick="summarizeDocument()" 
+                        class="w-full mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                    <i class="fas fa-compress"></i> Резюмувати документ
+                </button>
+                <button onclick="generateReport()" 
+                        class="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                    <i class="fas fa-file-word"></i> Створити звіт
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let chatHistory = [];
+    
+    // Load AI status
+    async function loadAIStatus() {
+        try {
+            const response = await fetch('/api/ai/status');
+            const data = await response.json();
+            
+            const statusDiv = document.getElementById('aiStatusInfo');
+            if (data.available) {
+                statusDiv.innerHTML = `
+                    <i class="fas fa-check-circle text-4xl text-green-600 mb-2"></i>
+                    <p class="text-green-700 font-semibold">AI доступний</p>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle text-4xl text-yellow-600 mb-2"></i>
+                    <p class="text-yellow-700 font-semibold">AI не налаштовано</p>
+                    <p class="text-sm text-gray-600 mt-2">${data.message}</p>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading AI status:', error);
+        }
+    }
+    
+    // Load templates
+    async function loadTemplates() {
+        try {
+            const response = await fetch('/api/templates/list');
+            const data = await response.json();
+            
+            const container = document.getElementById('templatesList');
+            container.innerHTML = data.templates.map(template => `
+                <button onclick="useTemplate('${template.id}')" 
+                        class="w-full text-left px-3 py-2 bg-blue-50 rounded hover:bg-blue-100 transition">
+                    <i class="fas fa-file"></i> ${template.name}
+                </button>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading templates:', error);
+        }
+    }
+    
+    // Handle chat form
+    document.getElementById('chatForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        // Add user message to chat
+        addMessage(message, 'user');
+        input.value = '';
+        
+        // Show loading
+        addMessage('Обробка...', 'ai', true);
+        
+        try {
+            const response = await fetch('/api/ai/query', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    query: message,
+                    context: chatHistory.join('\n')
+                })
+            });
+            
+            const data = await response.json();
+            
+            // Remove loading message
+            removeLastMessage();
+            
+            if (response.ok) {
+                addMessage(data.response, 'ai');
+                chatHistory.push(`User: ${message}`, `AI: ${data.response}`);
+            } else {
+                addMessage(data.mock_response || data.error, 'ai');
+            }
+        } catch (error) {
+            removeLastMessage();
+            addMessage('Помилка з\'єднання з AI', 'ai');
+        }
+    });
+    
+    function addMessage(text, sender, isLoading = false) {
+        const container = document.getElementById('chatMessages');
+        
+        // Remove welcome message if exists
+        if (container.querySelector('.text-center')) {
+            container.innerHTML = '';
+        }
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+        
+        messageDiv.innerHTML = `
+            <div class="max-w-2xl ${sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'} rounded-lg px-4 py-2">
+                ${isLoading ? '<i class="fas fa-spinner fa-spin"></i> ' : ''}${text}
+            </div>
+        `;
+        
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    function removeLastMessage() {
+        const container = document.getElementById('chatMessages');
+        const lastMessage = container.lastElementChild;
+        if (lastMessage) lastMessage.remove();
+    }
+    
+    function useTemplate(templateId) {
+        showNotification(`Шаблон "${templateId}" буде доступний незабаром`, 'info');
+    }
+    
+    function summarizeDocument() {
+        document.getElementById('messageInput').value = 'Будь ласка, підсумуй цей документ';
+    }
+    
+    function generateReport() {
+        document.getElementById('messageInput').value = 'Допоможи мені створити звіт';
+    }
+    
+    // Check for OCR text from previous page
+    window.addEventListener('load', () => {
+        const ocrText = localStorage.getItem('ocrTextForAI');
+        if (ocrText) {
+            localStorage.removeItem('ocrTextForAI');
+            document.getElementById('messageInput').value = `Проаналізуй цей текст: ${ocrText.substring(0, 200)}...`;
+        }
+    });
+    
+    // Load data on page load
+    loadAIStatus();
+    loadTemplates();
+</script>
+{% endblock %}

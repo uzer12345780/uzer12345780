@@ -1,0 +1,172 @@
+{% extends "layout.html" %}
+
+{% block title %}Головна - KoloCloud{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-home"></i> Головна панель
+        </h1>
+        <p class="text-gray-600">Вітаємо, {{ user.full_name or user.username }}!</p>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Файлів</p>
+                    <p id="filesCount" class="text-3xl font-bold text-blue-600">-</p>
+                </div>
+                <i class="fas fa-file-alt text-4xl text-blue-300"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Простір</p>
+                    <p id="storageSize" class="text-3xl font-bold text-green-600">-</p>
+                </div>
+                <i class="fas fa-hdd text-4xl text-green-300"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">OCR Обробка</p>
+                    <p class="text-3xl font-bold text-purple-600">
+                        <i class="fas fa-check-circle"></i>
+                    </p>
+                </div>
+                <i class="fas fa-image text-4xl text-purple-300"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">AI Помічник</p>
+                    <p id="aiStatus" class="text-3xl font-bold text-orange-600">-</p>
+                </div>
+                <i class="fas fa-robot text-4xl text-orange-300"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+        <h2 class="text-2xl font-bold mb-4">
+            <i class="fas fa-bolt"></i> Швидкі дії
+        </h2>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <a href="{{ url_for('files_page') }}" 
+               class="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+                <i class="fas fa-upload text-4xl text-blue-600 mb-2"></i>
+                <span class="text-center">Завантажити файл</span>
+            </a>
+            
+            <a href="{{ url_for('ocr_page') }}" 
+               class="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
+                <i class="fas fa-camera text-4xl text-purple-600 mb-2"></i>
+                <span class="text-center">OCR Сканування</span>
+            </a>
+            
+            <a href="{{ url_for('bot_page') }}" 
+               class="flex flex-col items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition">
+                <i class="fas fa-robot text-4xl text-orange-600 mb-2"></i>
+                <span class="text-center">AI Помічник</span>
+            </a>
+            
+            <a href="{{ url_for('chat_page') }}" 
+               class="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition">
+                <i class="fas fa-comments text-4xl text-green-600 mb-2"></i>
+                <span class="text-center">Відкрити чат</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Recent Files -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold mb-4">
+            <i class="fas fa-clock"></i> Останні файли
+        </h2>
+        
+        <div id="recentFiles" class="space-y-2">
+            <p class="text-gray-500 text-center py-4">Завантаження...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Load dashboard data
+    async function loadDashboardData() {
+        try {
+            // Load files count
+            const filesResponse = await fetch('/api/files');
+            if (filesResponse.ok) {
+                const filesData = await filesResponse.json();
+                document.getElementById('filesCount').textContent = filesData.count;
+                
+                // Calculate total size
+                let totalSize = 0;
+                filesData.files.forEach(file => totalSize += file.file_size || 0);
+                const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+                document.getElementById('storageSize').textContent = `${sizeMB} MB`;
+                
+                // Show recent files
+                displayRecentFiles(filesData.files.slice(0, 5));
+            }
+            
+            // Load AI status
+            const aiResponse = await fetch('/api/ai/status');
+            if (aiResponse.ok) {
+                const aiData = await aiResponse.json();
+                document.getElementById('aiStatus').innerHTML = aiData.available 
+                    ? '<i class="fas fa-check-circle"></i>' 
+                    : '<i class="fas fa-times-circle"></i>';
+            }
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+        }
+    }
+    
+    function displayRecentFiles(files) {
+        const container = document.getElementById('recentFiles');
+        
+        if (files.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">Немає файлів</p>';
+            return;
+        }
+        
+        container.innerHTML = files.map(file => `
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded hover:bg-gray-100">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-file text-blue-600"></i>
+                    <div>
+                        <p class="font-semibold">${file.original_filename}</p>
+                        <p class="text-sm text-gray-500">${formatDate(file.uploaded_at)}</p>
+                    </div>
+                </div>
+                <a href="/api/files/${file.id}/download" 
+                   class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <i class="fas fa-download"></i>
+                </a>
+            </div>
+        `).join('');
+    }
+    
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('uk-UA');
+    }
+    
+    // Load data on page load
+    loadDashboardData();
+</script>
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends "layout.html" %}
+
+{% block title %}Файли - KoloCloud{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8 flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-gray-800">
+            <i class="fas fa-folder"></i> Файловий менеджер
+        </h1>
+        
+        <button onclick="document.getElementById('uploadModal').classList.remove('hidden')"
+                class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-upload"></i> Завантажити файл
+        </button>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="bg-white p-4 rounded-lg shadow mb-6">
+        <div class="flex space-x-2">
+            <input type="text" id="searchInput" placeholder="Пошук файлів..."
+                   class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="searchFiles()" 
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <i class="fas fa-search"></i> Пошук
+            </button>
+            <button onclick="loadFiles()" 
+                    class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                <i class="fas fa-redo"></i> Оновити
+            </button>
+        </div>
+    </div>
+    
+    <!-- Files List -->
+    <div class="bg-white rounded-lg shadow">
+        <div id="filesList" class="divide-y">
+            <p class="text-center py-8 text-gray-500">Завантаження...</p>
+        </div>
+    </div>
+    
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+            <h2 class="text-2xl font-bold mb-4">Завантажити файл</h2>
+            
+            <form id="uploadForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Файл</label>
+                    <input type="file" id="fileInput" required
+                           class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Теги (через кому)</label>
+                    <input type="text" id="tagsInput" placeholder="документ, звіт, важливо"
+                           class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="encryptCheckbox" class="mr-2">
+                        <span>Зашифрувати файл</span>
+                    </label>
+                </div>
+                
+                <div class="flex space-x-2">
+                    <button type="submit" 
+                            class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-upload"></i> Завантажити
+                    </button>
+                    <button type="button" onclick="closeUploadModal()"
+                            class="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600">
+                        Скасувати
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function loadFiles() {
+        try {
+            const response = await fetch('/api/files');
+            const data = await response.json();
+            
+            displayFiles(data.files);
+        } catch (error) {
+            console.error('Error loading files:', error);
+            showNotification('Помилка завантаження файлів', 'error');
+        }
+    }
+    
+    function displayFiles(files) {
+        const container = document.getElementById('filesList');
+        
+        if (files.length === 0) {
+            container.innerHTML = '<p class="text-center py-8 text-gray-500">Немає файлів</p>';
+            return;
+        }
+        
+        container.innerHTML = files.map(file => `
+            <div class="p-4 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4 flex-1">
+                        <i class="fas fa-file-alt text-3xl text-blue-600"></i>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-lg">${file.original_filename}</h3>
+                            <p class="text-sm text-gray-500">
+                                ${formatFileSize(file.file_size)} • ${formatDate(file.uploaded_at)}
+                                ${file.is_encrypted ? '• <i class="fas fa-lock text-yellow-600"></i> Зашифровано' : ''}
+                            </p>
+                            ${file.tags && file.tags.length > 0 ? `
+                                <p class="text-sm mt-1">
+                                    ${file.tags.map(tag => `<span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-1">${tag}</span>`).join('')}
+                                </p>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <a href="/api/files/${file.id}/download" 
+                           class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        <button onclick="deleteFile(${file.id})"
+                                class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('fileInput');
+        const tagsInput = document.getElementById('tagsInput');
+        const encryptCheckbox = document.getElementById('encryptCheckbox');
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('tags', tagsInput.value);
+        formData.append('encrypt', encryptCheckbox.checked);
+        
+        try {
+            const response = await fetch('/api/files/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                showNotification('Файл завантажено успішно', 'success');
+                closeUploadModal();
+                loadFiles();
+            } else {
+                const error = await response.json();
+                showNotification(error.error || 'Помилка завантаження', 'error');
+            }
+        } catch (error) {
+            showNotification('Помилка з\'єднання', 'error');
+        }
+    });
+    
+    async function deleteFile(fileId) {
+        if (!confirm('Видалити цей файл?')) return;
+        
+        try {
+            const response = await fetch(`/api/files/${fileId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                showNotification('Файл видалено', 'success');
+                loadFiles();
+            } else {
+                showNotification('Помилка видалення', 'error');
+            }
+        } catch (error) {
+            showNotification('Помилка з\'єднання', 'error');
+        }
+    }
+    
+    async function searchFiles() {
+        const query = document.getElementById('searchInput').value;
+        if (!query) {
+            loadFiles();
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/files/search?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            displayFiles(data.files);
+        } catch (error) {
+            console.error('Error searching files:', error);
+        }
+    }
+    
+    function closeUploadModal() {
+        document.getElementById('uploadModal').classList.add('hidden');
+        document.getElementById('uploadForm').reset();
+    }
+    
+    function formatFileSize(bytes) {
+        if (!bytes) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleString('uk-UA');
+    }
+    
+    // Load files on page load
+    loadFiles();
+</script>
+{% endblock %}

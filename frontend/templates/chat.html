@@ -1,0 +1,102 @@
+{% extends "layout.html" %}
+
+{% block title %}Чат - KoloCloud{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-comments"></i> Командний чат
+        </h1>
+        <p class="text-gray-600">Спілкування в реальному часі</p>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Chat Area -->
+        <div class="lg:col-span-3 bg-white rounded-lg shadow-lg flex flex-col" style="height: 700px;">
+            <!-- Room Header -->
+            <div class="p-4 bg-green-600 text-white rounded-t-lg flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold">
+                        <i class="fas fa-hashtag"></i> <span id="currentRoom">general</span>
+                    </h2>
+                    <p class="text-sm text-green-100">Загальна кімната</p>
+                </div>
+                <div id="connectionStatus" class="text-sm">
+                    <i class="fas fa-circle text-green-300"></i> З'єднано
+                </div>
+            </div>
+            
+            <!-- Messages Area -->
+            <div id="messagesContainer" class="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50">
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-comments text-6xl text-gray-300 mb-4"></i>
+                    <p>Ласкаво просимо до чату! Почніть розмову.</p>
+                </div>
+            </div>
+            
+            <!-- Typing Indicator -->
+            <div id="typingIndicator" class="hidden px-4 py-2 text-sm text-gray-600 italic bg-gray-100">
+                <i class="fas fa-ellipsis-h"></i> Хтось набирає...
+            </div>
+            
+            <!-- Message Input -->
+            <div class="p-4 border-t bg-white rounded-b-lg">
+                <form id="messageForm" class="flex space-x-2">
+                    <input type="text" id="messageInput" placeholder="Введіть повідомлення..."
+                           class="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <button type="submit" 
+                            class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-paper-plane"></i> Відправити
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Active Users -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-bold mb-4">
+                    <i class="fas fa-users"></i> Онлайн <span id="onlineCount" class="text-green-600">(0)</span>
+                </h3>
+                <div id="activeUsers" class="space-y-2">
+                    <p class="text-gray-500 text-sm">Завантаження...</p>
+                </div>
+            </div>
+            
+            <!-- Rooms -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-bold mb-4">
+                    <i class="fas fa-door-open"></i> Кімнати
+                </h3>
+                <div class="space-y-2">
+                    <button onclick="switchRoom('general')" 
+                            class="w-full text-left px-3 py-2 bg-green-50 rounded hover:bg-green-100 transition room-btn active"
+                            data-room="general">
+                        <i class="fas fa-hashtag"></i> general
+                    </button>
+                    <button onclick="switchRoom('command')" 
+                            class="w-full text-left px-3 py-2 bg-gray-50 rounded hover:bg-gray-100 transition room-btn"
+                            data-room="command">
+                        <i class="fas fa-hashtag"></i> command
+                    </button>
+                    <button onclick="switchRoom('support')" 
+                            class="w-full text-left px-3 py-2 bg-gray-50 rounded hover:bg-gray-100 transition room-btn"
+                            data-room="support">
+                        <i class="fas fa-hashtag"></i> support
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}
