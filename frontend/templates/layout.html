@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KoloCloud - Хмарне Сховище{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100 font-sans">
+    
+    {% if current_user.is_authenticated %}
+    <!-- Navigation Bar -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold">
+                        <i class="fas fa-cloud"></i> KoloCloud
+                    </h1>
+                    <div class="hidden md:flex space-x-2">
+                        <a href="{{ url_for('dashboard') }}" class="px-3 py-2 rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-home"></i> Головна
+                        </a>
+                        <a href="{{ url_for('files_page') }}" class="px-3 py-2 rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-folder"></i> Файли
+                        </a>
+                        <a href="{{ url_for('ocr_page') }}" class="px-3 py-2 rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-image"></i> OCR
+                        </a>
+                        <a href="{{ url_for('bot_page') }}" class="px-3 py-2 rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-robot"></i> AI Помічник
+                        </a>
+                        <a href="{{ url_for('chat_page') }}" class="px-3 py-2 rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-comments"></i> Чат
+                        </a>
+                        {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('admin_page') }}" class="px-3 py-2 rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-cog"></i> Адмін
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm">
+                        <i class="fas fa-user"></i> {{ current_user.username }}
+                    </span>
+                    <button onclick="logout()" class="px-4 py-2 bg-red-500 rounded hover:bg-red-600 transition">
+                        <i class="fas fa-sign-out-alt"></i> Вихід
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center py-4 mt-12">
+        <p>&copy; 2024 KoloCloud. Військове хмарне сховище.</p>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

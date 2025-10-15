@@ -1,0 +1,202 @@
+{% extends "layout.html" %}
+
+{% block title %}Адміністрування - KoloCloud{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-cog"></i> Панель адміністратора
+        </h1>
+        <p class="text-gray-600">Керування системою та користувачами</p>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Користувачів</p>
+                    <p id="usersCount" class="text-3xl font-bold text-blue-600">-</p>
+                </div>
+                <i class="fas fa-users text-4xl text-blue-300"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Всього файлів</p>
+                    <p id="totalFiles" class="text-3xl font-bold text-green-600">-</p>
+                </div>
+                <i class="fas fa-file text-4xl text-green-300"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Повідомлень</p>
+                    <p id="totalMessages" class="text-3xl font-bold text-purple-600">-</p>
+                </div>
+                <i class="fas fa-comments text-4xl text-purple-300"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Активність</p>
+                    <p id="activityCount" class="text-3xl font-bold text-orange-600">-</p>
+                </div>
+                <i class="fas fa-chart-line text-4xl text-orange-300"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg shadow-lg">
+        <div class="border-b">
+            <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                <button onclick="showTab('users')" 
+                        class="tab-btn active py-4 px-1 border-b-2 border-blue-600 font-medium text-blue-600">
+                    <i class="fas fa-users"></i> Користувачі
+                </button>
+                <button onclick="showTab('logs')" 
+                        class="tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    <i class="fas fa-list"></i> Логи активності
+                </button>
+                <button onclick="showTab('settings')" 
+                        class="tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    <i class="fas fa-cog"></i> Налаштування
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Users Tab -->
+        <div id="usersTab" class="tab-content p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold">Користувачі системи</h2>
+                <button onclick="showAddUserModal()" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <i class="fas fa-user-plus"></i> Додати користувача
+                </button>
+            </div>
+            
+            <div id="usersList" class="space-y-2">
+                <p class="text-gray-500 text-center py-8">Завантаження...</p>
+            </div>
+        </div>
+        
+        <!-- Logs Tab -->
+        <div id="logsTab" class="tab-content hidden p-6">
+            <h2 class="text-2xl font-bold mb-4">Логи активності</h2>
+            
+            <div class="mb-4">
+                <input type="text" id="logsSearch" placeholder="Пошук в логах..."
+                       class="w-full px-4 py-2 border rounded-lg">
+            </div>
+            
+            <div id="logsList" class="space-y-2">
+                <p class="text-gray-500 text-center py-8">Логи будуть доступні незабаром</p>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div id="settingsTab" class="tab-content hidden p-6">
+            <h2 class="text-2xl font-bold mb-4">Налаштування системи</h2>
+            
+            <div class="space-y-6">
+                <div class="border-b pb-6">
+                    <h3 class="text-lg font-semibold mb-4">Загальні налаштування</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2">Назва системи</label>
+                            <input type="text" value="KoloCloud" 
+                                   class="w-full px-4 py-2 border rounded-lg">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 mb-2">Максимальний розмір файлу (MB)</label>
+                            <input type="number" value="100" 
+                                   class="w-full px-4 py-2 border rounded-lg">
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" checked class="mr-2">
+                                <span>Дозволити реєстрацію нових користувачів</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" checked class="mr-2">
+                                <span>Увімкнути шифрування файлів за замовчуванням</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <button class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                        <i class="fas fa-save"></i> Зберегти налаштування
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function showTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+        });
+        
+        // Remove active class from all buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active', 'border-blue-600', 'text-blue-600');
+            btn.classList.add('border-transparent', 'text-gray-500');
+        });
+        
+        // Show selected tab
+        document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+        
+        // Activate button
+        event.target.classList.add('active', 'border-blue-600', 'text-blue-600');
+        event.target.classList.remove('border-transparent', 'text-gray-500');
+    }
+    
+    function showAddUserModal() {
+        showNotification('Функція додавання користувача буде доступна незабаром', 'info');
+    }
+    
+    // Load mock statistics
+    document.getElementById('usersCount').textContent = '12';
+    document.getElementById('totalFiles').textContent = '245';
+    document.getElementById('totalMessages').textContent = '1,234';
+    document.getElementById('activityCount').textContent = '89';
+    
+    // Load mock users list
+    document.getElementById('usersList').innerHTML = `
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded hover:bg-gray-100">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-user-circle text-3xl text-blue-600"></i>
+                <div>
+                    <p class="font-semibold">admin</p>
+                    <p class="text-sm text-gray-600">admin@kolocloud.local</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm">Admin</span>
+                <span class="px-3 py-1 bg-green-100 text-green-800 rounded text-sm">Активний</span>
+            </div>
+        </div>
+    `;
+</script>
+{% endblock %}
